@@ -151,11 +151,18 @@ class WebServerQuery:
 
     
     def drawbodypy(self):
+        # 1) нужен механизм для подключения к ранее созданному процессу
+        # 2) нужен механизм остановки (паузы) у паралельного процесса(ожидание сигнала для снятия с паузы),
+        """
         if self.request['sessionid'] in self.__array_pipe__:
             print('sessionid ',self.request['sessionid'])
+            # Восстанавливаем поток из глобального массива
+            # pipe = self.__array_pipe__[self.request['sessionid']]
         else:
             print('NO sessionid ',self.request['sessionid'])
+            # Запоминаем созданный поток в  глобальный массив
             # self.__array_pipe__[self.request['sessionid']]=pipe
+        """
         pipe = subprocess.Popen([sys.executable, self.request['filepath']]
                                  , stdout=subprocess.PIPE
                                  , shell=True
