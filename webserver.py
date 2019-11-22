@@ -3,13 +3,15 @@ import os
 import socket
 from _thread import *
 import hashlib
-import subprocess
 import os.path
 import subprocess
 
 
 # begin  WebServerQuery
 class WebServerQuery:
+    """
+    The class in which the processing of user requests to the web server is implemented
+    """
     __array_pipe__={}
     _lastio = None
     _lastioerror = None
@@ -103,6 +105,9 @@ class WebServerQuery:
             self.request['post'] = headtxt[headtxt.find("\r\n\r\n"):]
 
     def drawhead(self):
+        """
+          drawing a response header
+        """
         contenttype = "text/html"
         if 'typ' in self.request:
            rashirenie = self.request['typ']
@@ -125,6 +130,9 @@ class WebServerQuery:
             print("An exception occurred", self.request)
 
     def drawbodypsp(self):
+        """
+        rendering a page like PSP (Contains Python code inserts "# () #")
+        """
         try:
             f = open(self.request['filepath'])
             for txt in f:
@@ -151,9 +159,15 @@ class WebServerQuery:
 
     
     def drawbodypy(self):
+        """
+        Running a Python script and sending a response to the browser text printed by the "print" operator
+        """
+
+        """
+        Для дальнейщей доработки!
         # 1) нужен механизм для подключения к ранее созданному процессу
         # 2) нужен механизм остановки (паузы) у паралельного процесса(ожидание сигнала для снятия с паузы),
-        """
+        
         if self.request['sessionid'] in self.__array_pipe__:
             print('sessionid ',self.request['sessionid'])
             # Восстанавливаем поток из глобального массива
@@ -177,6 +191,9 @@ class WebServerQuery:
 
 
     def drawbody(self):
+        """
+        procedure transfer to browser static procedure page
+        """
         sys.stdout = self._lastio
         try:
             with open(self.request['filepath'], mode='rb') as file:  # b is important -> binary
@@ -187,10 +204,16 @@ class WebServerQuery:
             sys.stdout = self.__client_connection.makefile('w')  # file interface: text, buffered
 
     def cls(self):
+        """
+        procedure closing user connection
+        """
         sys.stdout = self._lastio
         self.__client_connection.close()
 
     def __parseattrebute__(self, value, spel='&', spval='='):
+        """
+        procedure parse the string into request parameters
+        """
         res = {}
         if len(value) == 0:
             return res
@@ -205,6 +228,9 @@ class WebServerQuery:
 
 # begin  WebServer
 class WebServer:
+    """
+    A class that implements a simple web server
+    """
     port = 8080
     dirfile = None
 
@@ -217,15 +243,19 @@ class WebServer:
             os.mkdir(self.dirfile)
 
     def setPort(self, portsocket=8080):
+        """
+         Port selection
+        :param portsocket: number of port on which the web server will work
+        """
         self.port = portsocket
 
-    def setQueryDef(self, userquerydef):
-        self.querydef = userquerydef
 
     def start(self):
+        """
+        server startup
+        """
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind(("", self.port))
-        # mac = hexlify(s.getsockname()[4])
         s.listen(5)
         while True:
             сonnect, addr = s.accept()
@@ -236,28 +266,33 @@ class WebServer:
         s.close()
 
     def __runclientthreaded(self, сonnect, addr, dirfile):
-            webclient = WebServerQuery(сonnect, addr, dirfile)
-            if os.path.exists(webclient.request['filepath']) == False:
-                webclient.request['exec'] = 'txt'
-                webclient.drawhead()
-                print('File not found', webclient.request['filepath'])
-            elif webclient.request['exec'] == 'py':  # PythonScript
-               webclient.drawhead()
-               webclient.drawbodypy()
-            elif webclient.request['exec'] == 'psp':  # PythonServicePage
-               webclient.drawhead()
-               webclient.drawbodypsp()
-            else:
-               webclient.drawhead()
-               webclient.drawbody()
-            webclient.cls()
+        """
+        Processing user request in parallel thread
+        :param сonnect: Сustom socket connection
+        :param addr: Сlient ip address
+        :param dirfile: The directory in which static resources are timed
+        """
+        webclient = WebServerQuery(сonnect, addr, dirfile)
+        if os.path.exists(webclient.request['filepath']) == False:
+            webclient.request['exec'] = 'txt'
+            webclient.drawhead()
+            print('File not found', webclient.request['filepath'])
+        elif webclient.request['exec'] == 'py':  # PythonScript
+            webclient.drawhead()
+            webclient.drawbodypy()
+        elif webclient.request['exec'] == 'psp':  # PythonServicePage
+            webclient.drawhead()
+            webclient.drawbodypsp()
+        else:
+            webclient.drawhead()
+            webclient.drawbody() # Draw ststic page
+        webclient.cls()
 # end  WebServer
 
 
 
 
 def main():
-    host = ""
     try:
         port = sys.argv[1]
     except IndexError:
